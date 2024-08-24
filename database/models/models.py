@@ -31,4 +31,4 @@ class Attendance(Base):
     departure_time_actual = Column(Time, nullable=True)
     return_time = Column(Time, nullable=True)
     check = Column(Boolean, default=False)
-    skip_time = Column(Time, nullable=True)
+    skip_status = Column(String, nullable=True)

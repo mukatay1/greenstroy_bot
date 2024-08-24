@@ -1,12 +1,136 @@
-from aiogram import Router, types
+from datetime import datetime, timedelta
 
+from aiogram import Router, types
+from aiogram.filters import Command
+from aiogram.types import FSInputFile, CallbackQuery
+
+from config import months_russian
+from database.main import SessionLocal
+from database.models.models import Attendance
+from database.utils.get_all_attendances import get_all_attendances
+from database.utils.get_all_employees import get_all_employees
+from database.utils.get_employee_city import get_employee_city
+from keyboards.date_keyboard import date_keyboard
+from utils.excel_report import excel_report
+from utils.late_excel_report import late_excel_report
 from utils.has_admin_privileges import check_admin_privileges
+from utils.parse_report_date import parse_report_date
+from utils.str_to_date import str_to_date
 
 router = Router()
 
 
 @router.message(lambda message: message.text == "Опоздавшие")
-async def late_report_handler(message: types.Message) -> None:
+async def late_report_handler(message: types.Message):
+    user_id = message.from_user.id
+    city = get_employee_city(user_id)
+    error_message = check_admin_privileges(str(user_id))
+
+    if error_message:
+        await message.answer(error_message)
+        return
+
+    db = SessionLocal()
+
+    now = datetime.now()
+    first_day_of_month = now.replace(day=1)
+    last_day_of_month = (now.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    name_of_month_on_rus = months_russian[now.month]
+
+    employees = get_all_employees(city)
+
+    data = []
+    for employee in employees:
+
+        late_attendances = db.query(Attendance).filter(
+            Attendance.employee_id == employee.id,
+            Attendance.late == True,
+            Attendance.date >= first_day_of_month,
+            Attendance.date <= last_day_of_month
+        ).all()
+
+        late_days = [attendance.date for attendance in late_attendances]
+        late_days_str = ', '.join([str(day) for day in late_days])
+
+        data.append({
+            "ФИО": employee.fio,
+            "Телеграмм - ID": employee.telegram_id,
+            "Телеграмм Ник": employee.full_name,
+            "Количество опозданий": len(late_attendances),
+            "Дни опозданий": late_days_str
+        })
+
+    report_file = late_excel_report(data, name_of_month_on_rus, city)
+
+    report_document = FSInputFile(report_file)
+    await message.answer_document(
+        report_document,
+        caption=f"Отчет по опозданиям сотрудников за {name_of_month_on_rus} - г.{city.value}"
+    )
+
+    db.close()
+
+
+async def send_report(message: types.Message, selected_date: str, user_id: int) -> None:
+    date = str_to_date(selected_date)
+    city = get_employee_city(user_id)
+    employees = get_all_employees(city)
+    attendances = get_all_attendances(date=date)
+    data = []
+
+    for employee in employees:
+        employee_attendance = None
+        for attendance in attendances:
+            if attendance.employee_id == employee.id:
+                employee_attendance = attendance
+                break
+
+        if employee_attendance:
+            data.append({
+                "ФИО": employee.fio,
+                "Дата": date,
+                "Телеграмм - ID": employee.telegram_id,
+                "Телеграмм Ник": employee.full_name,
+                "Время прибытия": employee_attendance.arrival_time,
+                "Время ухода": employee_attendance.departure_time,
+                "Тип отъезда": employee_attendance.departure_type,
+                "Руководитель": employee_attendance.supervisor,
+                "Причина": employee_attendance.departure_reason,
+                "Время отъезда": employee_attendance.departure_time_actual,
+                "Время возвращения": employee_attendance.return_time,
+                "За ранее отпросился": employee_attendance.skip_status
+            })
+        else:
+            data.append({
+                "ФИО": employee.fio,
+                "Дата": date,
+                "Телеграмм - ID": employee.telegram_id,
+                "Телеграмм Ник": employee.full_name,
+                "Время прибытия": '',
+                "Время ухода": '',
+                "Тип отъезда": '',
+                "Руководитель": '',
+                "Причина": '',
+                "Время отъезда": '',
+                "Время возвращения": '',
+                "За ранее отпросился": ''
+            })
+
+    report_file = excel_report(data, f"{selected_date}", city)
+
+    report_document = FSInputFile(report_file)
+    await message.answer_document(report_document, caption=f"Отчет сотрудников за {selected_date} - г.{city.value}")
+
+
+@router.callback_query(lambda c: c.data and c.data.startswith("report_"))
+async def process_date_callback(callback_query: CallbackQuery):
+    selected_date = callback_query.data.split("_")[1]
+    await send_report(callback_query.message, selected_date, callback_query.from_user.id)
+    await callback_query.answer()
+
+
+@router.message(lambda message: message.text == "Отчет")
+async def report_button_handler(message: types.Message):
     user_id = message.from_user.id
     error_message = check_admin_privileges(str(user_id))
 
@@ -14,85 +138,70 @@ async def late_report_handler(message: types.Message) -> None:
         await message.answer(error_message)
         return
 
-    db: Session = SessionLocal()
+    keyboard = date_keyboard()
+    await message.answer(
+            "Чтобы получить отчет за конкретный день, напишите команду в формате: /report YYYY-MM-DD, где YYYY-MM-DD — это дата в формате год-месяц-день. Например: /report 2024-07-20.")
+    await message.answer("Выберите дату для отчета:", reply_markup=keyboard)
 
-    now = datetime.now()
-    first_day_of_month = now.replace(day=1)
-    last_day_of_month = (now.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
-    name_of_month_on_rus = months_russian[now.month]
 
-    IGNORE_WORKERS = ['1195996440', '6468224924','133919486']
-    employees = db.query(Employee).filter(not_(Employee.telegram_id.in_(IGNORE_WORKERS))).all()
+@router.message(Command(commands=['report']))
+async def report_handler(message: types.Message):
+    user_id = message.from_user.id
+    city = get_employee_city(user_id)
 
-        data = []
-        for employee in employees:
-            late_attendances = db.query(Attendance).filter(
-                Attendance.employee_id == employee.id,
-                Attendance.late == True,
-                Attendance.date >= first_day_of_month,
-                Attendance.date <= last_day_of_month
-            ).all()
+    try:
+        report_date = parse_report_date(message.text)
+    except ValueError as e:
+        await message.answer(str(e))
+        return
 
-            late_days = [attendance.date for attendance in late_attendances]
-            late_days_str = ', '.join([str(day) for day in late_days])
+    employees = get_all_employees(city)
+    attendances = get_all_attendances(date=report_date)
 
+    data = []
+
+    for employee in employees:
+        employee_attendance = None
+        for attendance in attendances:
+            if attendance.employee_id == employee.id:
+                employee_attendance = attendance
+                break
+
+        if employee_attendance:
             data.append({
                 "ФИО": employee.fio,
+                "Дата": report_date,
                 "Телеграмм - ID": employee.telegram_id,
                 "Телеграмм Ник": employee.full_name,
-                "Количество опозданий": len(late_attendances),
-                "Дни опозданий": late_days_str
+                "Время прибытия": employee_attendance.arrival_time,
+                "Время ухода": employee_attendance.departure_time,
+                "Тип отъезда": employee_attendance.departure_type,
+                "Руководитель": employee_attendance.supervisor,
+                "Причина": employee_attendance.departure_reason,
+                "Время отъезда": employee_attendance.departure_time_actual,
+                "Время возвращения": employee_attendance.return_time,
+                "За ранее отпросился": employee_attendance.skip_status
+
+            })
+        else:
+            data.append({
+                "ФИО": employee.fio,
+                "Дата": report_date,
+                "Телеграмм - ID": employee.telegram_id,
+                "Телеграмм Ник": employee.full_name,
+                "Время прибытия": '',
+                "Время ухода": '',
+                "Тип отъезда": '',
+                "Руководитель": '',
+                "Причина": '',
+                "Время отъезда": '',
+                "Время возвращения": '',
+                "За ранее отпросился": ''
             })
 
-        df = pd.DataFrame(sorted(data, key=lambda x: x["Количество опозданий"], reverse=True))
+    report_file = excel_report(data, f"{report_date}", city)
 
-        report_file = f"Отчет_по_опозданиям_за_{name_of_month_on_rus}.xlsx"
-        df.to_excel(report_file, index=False, engine='openpyxl')
+    report_document = FSInputFile(report_file)
+    await message.answer_document(report_document, caption=f"Отчет сотрудников за {report_date} - г.{city.value}")
 
-        wb = load_workbook(report_file)
-        ws = wb.active
-        ws.title = "Отчет"
 
-        ws.insert_rows(1)
-        ws.merge_cells('A1:E1')
-        ws['A1'] = f'Отчет по опозданиям сотрудников за {name_of_month_on_rus}'
-        ws['A1'].font = Font(size=16, bold=True)
-
-        for column in ws.columns:
-            max_length = 0
-            column_letter = None
-            for cell in column:
-                if not isinstance(cell, MergedCell):
-                    column_letter = cell.column_letter
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(cell.value)
-                    except:
-                        pass
-            if column_letter:
-                adjusted_width = (max_length + 2)
-                ws.column_dimensions[column_letter].width = adjusted_width
-
-        for row in ws.iter_rows(min_row=3, max_col=5):
-            try:
-                late_count = int(row[3].value)
-            except (ValueError, TypeError):
-                late_count = 0
-
-            if late_count > 3:
-                for cell in row:
-                    cell.fill = red_fill
-                    cell.border = black_border
-            else:
-                for cell in row:
-                    cell.fill = green_fill
-                    cell.border = black_border
-
-        wb.save(report_file)
-
-        report_document = FSInputFile(report_file)
-
-        await message.answer_document(report_document,
-                                      caption=f"Отчет по опозданиям сотрудников за {name_of_month_on_rus}")
-
-        db.close()

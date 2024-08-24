@@ -14,7 +14,7 @@ router = Router()
 
 
 @router.message(lambda message: message.text == "Пришел")
-async def arrival_handler(message: types.Message) -> None:
+async def arrival_handler(message: types.Message):
     user_id = message.from_user.id
     current_date = date.today()
 
@@ -57,7 +57,7 @@ async def arrival_handler(message: types.Message) -> None:
 
 
 @router.message(lambda message: message.text == "Ушел")
-async def departure_handler(message: types.Message) -> None:
+async def departure_handler(message: types.Message):
     user_id = message.from_user.id
     current_date = date.today()
     keyboard = start_keyboard(str(user_id))

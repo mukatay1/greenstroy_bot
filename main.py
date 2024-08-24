@@ -14,7 +14,10 @@ from database.main import init_db
 
 from handlers.base_commands import router as base_router
 from handlers.attendance_commands import router as attendance_router
-from handlers.report_commands import router as report_commands
+from handlers.report_commands import router as report_router
+from handlers.departure_commands import router as departure_router
+from handlers.chat_commands import router as chat_router
+from handlers.absent_commands import router as absent_router
 
 load_dotenv()
 
@@ -32,7 +35,10 @@ async def main() -> None:
 
     dp.include_router(base_router)
     dp.include_router(attendance_router)
-    dp.include_router(report_commands)
+    dp.include_router(report_router)
+    dp.include_router(departure_router)
+    dp.include_router(absent_router)
+    dp.include_router(chat_router)
 
     init_db()
 

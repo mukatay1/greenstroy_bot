@@ -4,7 +4,7 @@ from database.main import SessionLocal
 from database.models.models import Attendance
 
 
-def get_attendance(
+def get_all_attendances(
         employee_id: int = None,
         date: date = None,
         arrival_time: time = None,
@@ -17,7 +17,7 @@ def get_attendance(
         return_time: time = None,
         check: bool = None,
         skip_status: str = None
-) -> Attendance:
+) -> list[Attendance]:
     with SessionLocal() as db:
         query = db.query(Attendance)
 
@@ -46,5 +46,4 @@ def get_attendance(
         if skip_status is not None:
             query = query.filter(Attendance.skip_status == skip_status)
 
-
-        return query.first()
+        return query.all()

@@ -10,13 +10,13 @@ def start_keyboard(user_id: str) -> ReplyKeyboardMarkup:
     if is_admin:
         kb = [
             [KeyboardButton(text="Пришел"), KeyboardButton(text="Ушел")],
-            [KeyboardButton(text="Отъезд"), KeyboardButton(text="Отпроситься"), KeyboardButton(text="Отчет")],
+            [KeyboardButton(text="Отъезд"), KeyboardButton(text="За ранее отпросился"), KeyboardButton(text="Отчет")],
             [KeyboardButton(text="Табель"), KeyboardButton(text="Опоздавшие")],
         ]
     else:
         kb = [
             [KeyboardButton(text="Пришел"), KeyboardButton(text="Ушел")],
-            [KeyboardButton(text="Отъезд"), KeyboardButton(text="Отпроситься")]
+            [KeyboardButton(text="Отъезд"), KeyboardButton(text="За ранее отпросился")]
         ]
 
     keyboard = ReplyKeyboardMarkup(
