@@ -18,6 +18,7 @@ from handlers.report_commands import router as report_router
 from handlers.departure_commands import router as departure_router
 from handlers.chat_commands import router as chat_router
 from handlers.absent_commands import router as absent_router
+from handlers.reportcard_commands import router as card_router
 
 load_dotenv()
 
@@ -38,6 +39,7 @@ async def main() -> None:
     dp.include_router(report_router)
     dp.include_router(departure_router)
     dp.include_router(absent_router)
+    dp.include_router(card_router)
     dp.include_router(chat_router)
 
     init_db()

@@ -8,7 +8,7 @@ class Employee(Base):
     __tablename__ = 'employees'
 
     id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(Integer, unique=True, index=True)
+    telegram_id = Column(String, unique=True, index=True)
     fio = Column(String, index=True)
     full_name = Column(String, index=True)
     attendances = relationship("Attendance", back_populates="employee")

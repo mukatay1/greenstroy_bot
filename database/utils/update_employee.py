@@ -6,7 +6,7 @@ from database.models.models import Employee
 
 
 def update_employee(
-        user_id: int,
+        user_id: str,
         full_name: Optional[str] = None,
         fio: Optional[str] = None,
         city: Optional[City] = None

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from aiogram import Router, types
 from aiogram.filters import Command
@@ -12,6 +12,8 @@ from database.utils.get_all_employees import get_all_employees
 from database.utils.get_employee_city import get_employee_city
 from keyboards.date_keyboard import date_keyboard
 from utils.excel_report import excel_report
+from utils.get_first_day_of_month import get_first_day_of_month
+from utils.get_last_day_of_month import get_last_day_of_month
 from utils.late_excel_report import late_excel_report
 from utils.has_admin_privileges import check_admin_privileges
 from utils.parse_report_date import parse_report_date
@@ -23,7 +25,7 @@ router = Router()
 @router.message(lambda message: message.text == "Опоздавшие")
 async def late_report_handler(message: types.Message):
     user_id = message.from_user.id
-    city = get_employee_city(user_id)
+    city = get_employee_city(str(user_id))
     error_message = check_admin_privileges(str(user_id))
 
     if error_message:
@@ -33,8 +35,8 @@ async def late_report_handler(message: types.Message):
     db = SessionLocal()
 
     now = datetime.now()
-    first_day_of_month = now.replace(day=1)
-    last_day_of_month = (now.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    first_day_of_month = get_first_day_of_month()
+    last_day_of_month = get_last_day_of_month()
     name_of_month_on_rus = months_russian[now.month]
 
     employees = get_all_employees(city)
@@ -44,7 +46,7 @@ async def late_report_handler(message: types.Message):
 
         late_attendances = db.query(Attendance).filter(
             Attendance.employee_id == employee.id,
-            Attendance.late == True,
+            Attendance.late is True,
             Attendance.date >= first_day_of_month,
             Attendance.date <= last_day_of_month
         ).all()
@@ -73,7 +75,7 @@ async def late_report_handler(message: types.Message):
 
 async def send_report(message: types.Message, selected_date: str, user_id: int) -> None:
     date = str_to_date(selected_date)
-    city = get_employee_city(user_id)
+    city = get_employee_city(str(user_id))
     employees = get_all_employees(city)
     attendances = get_all_attendances(date=date)
     data = []
@@ -147,7 +149,7 @@ async def report_button_handler(message: types.Message):
 @router.message(Command(commands=['report']))
 async def report_handler(message: types.Message):
     user_id = message.from_user.id
-    city = get_employee_city(user_id)
+    city = get_employee_city(str(user_id))
 
     try:
         report_date = parse_report_date(message.text)

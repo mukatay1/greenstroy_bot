@@ -24,7 +24,7 @@ async def start_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     full_name = message.from_user.full_name
     keyboard = start_keyboard(str(user_id))
-    employee = get_employee(user_id)
+    employee = get_employee(str(user_id))
 
     if not employee:
         welcome_text = (
@@ -60,16 +60,16 @@ async def handle_full_name(message: types.Message, state: FSMContext) -> None:
     state_data = await state.get_data()
     city = state_data.get('city')
 
-    existing_employee = get_employee(user_id)
+    existing_employee = get_employee(str(user_id))
 
     if existing_employee:
         update_employee(
-            user_id=user_id,
+            user_id=str(user_id),
             fio=message.text
         )
     else:
         create_employee(
-            telegram_id=user_id,
+            telegram_id=str(user_id),
             full_name=full_name,
             fio=message.text,
             city=city

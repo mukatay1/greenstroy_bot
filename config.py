@@ -23,6 +23,16 @@ supervisors = [
     "Тайбупенова Шолпан"
 ]
 
+weekdays = [
+    'Понедельник',
+    'Вторник',
+    'Среда',
+    'Четверг',
+    'Пятница',
+    'Суббота',
+    'Воскресенье'
+]
+
 red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
 green_fill = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
 black_border = Border(

@@ -97,7 +97,7 @@ async def handle_absence_reason(message: types.Message, state: FSMContext):
 async def return_data(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
     current_date = date.today()
-    employee = get_employee(user_id)
+    employee = get_employee(str(user_id))
     existing_attendance = get_attendance(
         employee_id=employee.id,
         date=current_date

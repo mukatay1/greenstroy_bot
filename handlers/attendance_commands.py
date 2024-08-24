@@ -9,6 +9,7 @@ from database.utils.update_attendance import update_attendance
 from keyboards.start_keyboard import start_keyboard
 from utils.get_current_time import get_current_time
 from utils.is_employee_late import is_employee_late
+from utils.is_weekend import is_weekend
 
 router = Router()
 
@@ -19,7 +20,7 @@ async def arrival_handler(message: types.Message):
     current_date = date.today()
 
     keyboard = start_keyboard(str(user_id))
-    employee = get_employee(user_id)
+    employee = get_employee(str(user_id))
 
     if employee:
         attendance = get_attendance(
@@ -34,21 +35,29 @@ async def arrival_handler(message: types.Message):
                     arrival_time=get_current_time(),
                     check=False
                 )
-                await message.answer("Время прибытия успешно отмечено!", reply_markup=keyboard)
+                response_message = "Время прибытия успешно отмечено!"
+                if is_weekend(current_date):
+                    response_message += " Отличная работа, что пришли в выходной день!"
+                await message.answer(response_message, reply_markup=keyboard)
             else:
                 await message.answer("Вы уже отметили прибытие сегодня.", reply_markup=keyboard)
         else:
-            is_late = is_employee_late()
+            is_late = False
+            if not is_weekend(current_date):
+                is_late = is_employee_late()
+
             create_attendance(
                 employee_id=employee.id,
                 date=current_date,
                 arrival_time=get_current_time(),
                 late=is_late
             )
-            await message.answer(
-                "Время прибытия успешно отмечено!" if not is_late
-                else "Время прибытия успешно отмечено! К сожалению, вы опоздали."
-            )
+            response_message = "Время прибытия успешно отмечено!"
+            if is_late and not is_weekend(current_date):
+                response_message += " К сожалению, вы опоздали."
+            if is_weekend(current_date):
+                response_message += " Отличная работа, что пришли в выходной день!"
+            await message.answer(response_message, reply_markup=keyboard)
     else:
         await message.answer(
             "Вы не зарегистрированы. Пожалуйста, используйте команду /start для регистрации.",
@@ -61,7 +70,7 @@ async def departure_handler(message: types.Message):
     user_id = message.from_user.id
     current_date = date.today()
     keyboard = start_keyboard(str(user_id))
-    employee = get_employee(user_id)
+    employee = get_employee(str(user_id))
 
     if employee:
         attendance = get_attendance(

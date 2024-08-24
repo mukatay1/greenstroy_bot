@@ -10,7 +10,7 @@ router = Router()
 
 async def universal_message_handler(message: types.Message, bot: Bot) -> None:
     user_id = message.from_user.id
-    employee = get_employee(user_id)
+    employee = get_employee(str(user_id))
     employee_name = employee.fio if employee and employee.fio else message.from_user.full_name
     message_text = (
         f"<b>📩 Новое сообщение</b>\n\n"
@@ -22,7 +22,7 @@ async def universal_message_handler(message: types.Message, bot: Bot) -> None:
 
 
 async def send_message_to_all_employees(bot: Bot, message_text: str, user_id: int) -> None:
-    city = get_employee_city(user_id)
+    city = get_employee_city(str(user_id))
     employees = get_all_employees_without_ignored(city)
     for employee in employees:
         try:

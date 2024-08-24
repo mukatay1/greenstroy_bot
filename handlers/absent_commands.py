@@ -15,7 +15,7 @@ router = Router()
 async def skip_command_handler(message: types.Message):
     user_id = message.from_user.id
 
-    employee = get_employee(user_id)
+    employee = get_employee(str(user_id))
     attendance = get_attendance(
         employee_id=employee.id,
         date=date.today()

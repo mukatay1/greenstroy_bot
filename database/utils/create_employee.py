@@ -3,7 +3,7 @@ from database.models.City import City
 from database.models.models import Employee
 
 
-def create_employee(telegram_id: int, full_name: str, fio: str, city: City) -> Employee:
+def create_employee(telegram_id: str, full_name: str, fio: str, city: City) -> Employee:
     with SessionLocal() as db:
 
         new_employee = Employee(
