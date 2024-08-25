@@ -32,7 +32,7 @@ async def start_handler(message: types.Message, state: FSMContext):
         )
         await message.answer(welcome_text)
 
-        await message.answer("Пожалуйста, выберите ваш город:", reply_markup=city_keyboard())
+        await message.answer("Пожалуйста, выберите ваш город:", reply_markup=city_keyboard('start'))
         await state.set_state(Form.city)
     else:
         await message.answer(
@@ -41,9 +41,9 @@ async def start_handler(message: types.Message, state: FSMContext):
         )
 
 
-@router.callback_query(Form.city)
+@router.callback_query(lambda c: c.data.startswith('start_'))
 async def handle_city_selection(callback_query: types.CallbackQuery, state: FSMContext):
-    city_str = callback_query.data
+    city_str = callback_query.data.split('_')[1]
     city = City[city_str]
 
     await state.update_data(city=city)
@@ -80,3 +80,29 @@ async def handle_full_name(message: types.Message, state: FSMContext) -> None:
         reply_markup=keyboard
     )
     await state.clear()
+
+
+@router.message(lambda message: message.text == "Выбрать город")
+async def city_command_handler(message: types.Message):
+    keyboard = city_keyboard('change')
+    await message.answer('Пожалуйста, выберите город из списка ниже.', reply_markup=keyboard)
+
+
+@router.callback_query(lambda c: c.data.startswith('change_'))
+async def handle_city_change(callback_query: types.CallbackQuery):
+    user_id = str(callback_query.from_user.id)
+    city_str = callback_query.data.split('_')[1]
+    city = City[city_str]
+
+    keyboard = start_keyboard(user_id)
+    employee = get_employee(user_id)
+    if employee:
+        update_employee(
+            user_id=user_id,
+            city=city
+        )
+        message = f'Город успешно изменен на {city.value}. Все дальнейшие действия будут связаны с этим городом.'
+        await callback_query.message.answer(message, reply_markup=keyboard)
+    else:
+        message = "К сожалению, не удалось найти сотрудника. Пожалуйста, проверьте введенные данные и попробуйте снова."
+        await callback_query.message.answer(message, reply_markup=keyboard)

@@ -16,7 +16,8 @@ def create_attendance(
         departure_time_actual: time = None,
         return_time: time = None,
         check: bool = False,
-        skip_status: str = None
+        skip_status: str = None,
+        overtime: time = None
 ) -> Attendance:
     with SessionLocal() as db:
         attendance = Attendance(
@@ -31,7 +32,8 @@ def create_attendance(
             departure_time_actual=departure_time_actual,
             return_time=return_time,
             check=check,
-            skip_status=skip_status
+            skip_status=skip_status,
+            overtime=overtime
         )
         db.add(attendance)
         db.commit()

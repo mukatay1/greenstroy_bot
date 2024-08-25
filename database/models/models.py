@@ -32,3 +32,4 @@ class Attendance(Base):
     return_time = Column(Time, nullable=True)
     check = Column(Boolean, default=False)
     skip_status = Column(String, nullable=True)
+    overtime = Column(Time, nullable=True)

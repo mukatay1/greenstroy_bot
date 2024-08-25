@@ -15,7 +15,8 @@ def update_attendance(
         departure_time_actual: time = None,
         return_time: time = None,
         check: bool = None,
-        skip_status: str = None
+        skip_status: str = None,
+        overtime: time = None,
 ) -> Attendance:
     with SessionLocal() as db:
         attendance = db.query(Attendance).filter(Attendance.id == attendance_id).first()
@@ -41,6 +42,8 @@ def update_attendance(
                 attendance.check = check
             if skip_status is not None:
                 attendance.skip_status = skip_status
+            if overtime is not None:
+                attendance.overtime = overtime
 
             db.commit()
             db.refresh(attendance)

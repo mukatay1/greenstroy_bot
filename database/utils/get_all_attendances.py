@@ -16,7 +16,7 @@ def get_all_attendances(
         departure_time_actual: time = None,
         return_time: time = None,
         check: bool = None,
-        skip_status: str = None
+        skip_status: str = None,
 ) -> list[Attendance]:
     with SessionLocal() as db:
         query = db.query(Attendance)
