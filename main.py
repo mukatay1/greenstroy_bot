@@ -19,6 +19,7 @@ from handlers.departure_commands import router as departure_router
 from handlers.chat_commands import router as chat_router
 from handlers.absent_commands import router as absent_router
 from handlers.reportcard_commands import router as card_router
+from utils.schedule import schedule_jobs
 
 load_dotenv()
 
@@ -43,6 +44,7 @@ async def main() -> None:
     dp.include_router(chat_router)
 
     init_db()
+    schedule_jobs(bot)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)

@@ -1,7 +1,7 @@
 from openpyxl.styles import PatternFill, Border, Side
 
 
-DEBUG = True
+DEBUG = False
 
 months_russian = {
     1: "Январь",
@@ -18,9 +18,14 @@ months_russian = {
     12: "Декабрь"
 }
 
+# supervisors = [
+#     "Кексель Кристина",
+#     "Тайбупенова Шолпан"
+# ]
+
 supervisors = [
-    "Кексель Кристина",
-    "Тайбупенова Шолпан"
+    "Руководитель - 1",
+    "Руководитель - 2"
 ]
 
 weekdays = [

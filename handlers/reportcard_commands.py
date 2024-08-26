@@ -54,7 +54,13 @@ async def month_report_handler(message: types.Message) -> None:
             if attendance:
                 arrival_time = attendance.arrival_time.strftime('%H:%M') if attendance.arrival_time else ''
                 departure_time = attendance.departure_time.strftime('%H:%M') if attendance.departure_time else ''
-                worked_hours = calculate_hours(arrival_time, departure_time)
+                overtime = attendance.overtime.strftime('%H:%M') if attendance.overtime else '00:00'
+                worked_hours = calculate_hours(arrival_time, departure_time, overtime)
+
+                if attendance.overtime:
+                    departure_time = attendance.overtime.strftime('%H:%M')
+                else:
+                    departure_time = attendance.departure_time.strftime('%H:%M') if attendance.departure_time else ''
 
                 row_arrival.append(arrival_time)
                 row_departure.append(departure_time)

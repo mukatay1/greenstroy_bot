@@ -122,7 +122,7 @@ async def overtime_handler(message: types.Message):
                 )
 
                 await message.answer(
-                    f"Переработка за {previous_day} успешно записана: {overtime_time.strftime("%H:%M")}.",
+                    f"Переработка за {previous_day} успешно записана: {overtime_time.strftime('%H:%M')}.",
                     reply_markup=keyboard
                 )
             else:
@@ -141,6 +141,3 @@ async def overtime_handler(message: types.Message):
             "Произошла ошибка при обработке времени. Пожалуйста, попробуйте снова.",
             reply_markup=keyboard
         )
-
-
-
